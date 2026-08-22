@@ -12,7 +12,10 @@ import {
   CheckCircle2,
   Volume2,
   VolumeX,
-  Sliders
+  Sliders,
+  Clock,
+  HelpCircle,
+  Timer
 } from 'lucide-react';
 import { ClientRoomState, Player } from '../../types';
 import { AvatarBadge, COLOR_PALETTE, AVATAR_ICONS } from '../AvatarBadge';
@@ -43,7 +46,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   onOpenShare,
   onToggleTVMode
 }) => {
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettings, setShowSettings] = useState(isHost);
   const [muted, setMuted] = useState(soundFx.isMuted);
 
   const players = state.players;
@@ -51,6 +54,12 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   const minPlayers = 4;
   const canStart = readyCount >= minPlayers;
   const botCount = players.filter(p => p.isBot).length;
+
+  const votingTime = state.settings.votingTimeSec || 20;
+  const defenseTime = state.settings.defenseTimeSec || 15;
+  const guessTime = state.settings.guessTimeSec || 15;
+  const resultTime = state.settings.resultTimeSec || 8;
+  const totalRounds = state.settings.totalRounds || 5;
 
   const toggleMute = () => {
     soundFx.isMuted = !soundFx.isMuted;
@@ -105,8 +114,8 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
           </div>
         </div>
 
-        {/* Players count status */}
-        <div className="mt-4 sm:mt-5 pt-3 sm:pt-4 border-t-2 border-[#222] flex items-center justify-between text-xs">
+        {/* Players count & Settings Summary */}
+        <div className="mt-4 sm:mt-5 pt-3 sm:pt-4 border-t-2 border-[#222] flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-2 text-slate-300 font-bold uppercase tracking-wider">
             <Users size={16} className="text-[#39FF14]" />
             <span>Jugadores: <b className="text-[#39FF14] font-mono text-sm">{readyCount}</b> / 12</span>
@@ -117,8 +126,17 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
             )}
           </div>
 
-          <div className="text-slate-400 text-xs font-mono uppercase tracking-widest">
-            {state.settings.totalRounds} rondas
+          <div className="flex items-center gap-3 text-slate-400 text-[11px] font-mono uppercase tracking-wider">
+            <span className="flex items-center gap-1 text-[#FFE600]">
+              <Timer size={13} />
+              {votingTime}s Voto
+            </span>
+            <span className="text-[#39FF14]">
+              {defenseTime}s Defensa
+            </span>
+            <span className="text-slate-300">
+              {totalRounds} Rondas
+            </span>
           </div>
         </div>
       </div>
@@ -138,7 +156,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
               {botCount > 0 ? (
                 <button
                   onClick={onRemoveBots}
-                  className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 font-bold uppercase py-1 px-2.5 bg-rose-950/40 border border-rose-800 transition"
+                  className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 font-bold uppercase py-1 px-2.5 bg-rose-950/40 border border-rose-800 transition active:scale-95"
                 >
                   <Trash2 size={13} />
                   <span>Quitar bots</span>
@@ -146,7 +164,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
               ) : (
                 <button
                   onClick={() => onAddBots(4 - players.length > 0 ? 4 - players.length : 1)}
-                  className="text-xs text-black font-black uppercase py-1 px-3 bg-[#FFE600] hover:bg-[#ebd300] border-2 border-black shadow-[2px_2px_0px_0px_#000000] flex items-center gap-1 transition"
+                  className="text-xs text-black font-black uppercase py-1 px-3 bg-[#FFE600] hover:bg-[#ebd300] border-2 border-black shadow-[2px_2px_0px_0px_#000000] flex items-center gap-1 transition active:scale-95"
                 >
                   <Bot size={14} />
                   <span>+ Bots Demo</span>
@@ -208,57 +226,156 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
 
       {/* Host Settings & Controls */}
       {isHost ? (
-        <div className="bg-black border-4 border-[#333] p-6 shadow-[8px_8px_0px_0px_rgba(255,16,240,0.3)] flex flex-col gap-4">
+        <div className="bg-black border-4 border-[#333] p-5 sm:p-6 shadow-[8px_8px_0px_0px_rgba(255,16,240,0.3)] flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <button
               onClick={() => setShowSettings(!showSettings)}
               className="text-xs font-black uppercase tracking-wider text-[#39FF14] hover:underline flex items-center gap-2 transition"
             >
               <Sliders size={16} />
-              <span>Configuración de Partida [{showSettings ? 'OCULTAR' : 'AJUSTAR'}]</span>
+              <span>Configuración de Tiempos y Rondas [{showSettings ? 'OCULTAR' : 'MODIFICAR'}]</span>
             </button>
+            <span className="text-[10px] uppercase font-mono text-[#FFE600] bg-[#FFE600]/10 border border-[#FFE600]/30 px-2 py-0.5">
+              Solo Anfitrión
+            </span>
           </div>
 
           {showSettings && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t-2 border-[#222] animate-in fade-in">
-              <div className="bg-[#111] p-4 border-2 border-[#333]">
-                <label className="text-xs font-black uppercase tracking-widest text-slate-300 block mb-2">
-                  Rondas: <b className="text-[#FF10F0] font-mono text-sm">{state.settings.totalRounds}</b>
-                </label>
-                <input
-                  type="range"
-                  min="3"
-                  max="12"
-                  step="1"
-                  value={state.settings.totalRounds}
-                  onChange={(e) => onUpdateSettings({ totalRounds: parseInt(e.target.value) })}
-                  className="w-full accent-[#FF10F0] h-2 bg-[#222] rounded-none cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] font-mono text-slate-500 mt-1 uppercase">
-                  <span>3 Rápida</span>
-                  <span>5 Normal</span>
-                  <span>12 Épica</span>
+            <div className="flex flex-col gap-4 pt-3 border-t-2 border-[#222] animate-in fade-in">
+              {/* Row 1: Rondas & Votación */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* Rondas */}
+                <div className="bg-[#111] p-3.5 border-2 border-[#333]">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-300">
+                      Rondas de Juego
+                    </label>
+                    <span className="text-[#FF10F0] font-mono font-black text-sm">{totalRounds}</span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {[3, 5, 8, 10, 12].map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => onUpdateSettings({ totalRounds: r })}
+                        className={`py-1.5 text-xs font-black border-2 transition ${
+                          totalRounds === r
+                            ? 'bg-[#FF10F0] text-black border-black shadow-[2px_2px_0px_0px_#000000]'
+                            : 'bg-[#1A1A1A] text-slate-400 border-[#333] hover:text-white hover:border-[#666]'
+                        }`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tiempo para Votar (Pregunta) */}
+                <div className="bg-[#111] p-3.5 border-2 border-[#333]">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-300 flex items-center gap-1.5">
+                      <Clock size={13} className="text-[#39FF14]" />
+                      <span>Tiempo para Votar</span>
+                    </label>
+                    <span className="text-[#39FF14] font-mono font-black text-sm">{votingTime}s</span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {[15, 20, 30, 45, 60].map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => onUpdateSettings({ votingTimeSec: t })}
+                        className={`py-1.5 text-xs font-black border-2 transition ${
+                          votingTime === t
+                            ? 'bg-[#39FF14] text-black border-black shadow-[2px_2px_0px_0px_#000000]'
+                            : 'bg-[#1A1A1A] text-slate-400 border-[#333] hover:text-white hover:border-[#666]'
+                        }`}
+                      >
+                        {t}s
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-[#111] p-4 border-2 border-[#333]">
-                <label className="text-xs font-black uppercase tracking-widest text-slate-300 block mb-2">
-                  Tiempo de Defensa: <b className="text-[#39FF14] font-mono text-sm">{state.settings.defenseTimeSec}s</b>
-                </label>
-                <div className="flex gap-2">
-                  {[10, 15, 20].map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => onUpdateSettings({ defenseTimeSec: t })}
-                      className={`flex-1 py-2 text-xs font-black border-2 transition ${
-                        state.settings.defenseTimeSec === t
-                          ? 'bg-[#39FF14] text-black border-black shadow-[2px_2px_0px_0px_#000000]'
-                          : 'bg-[#1A1A1A] text-slate-400 border-[#333] hover:text-white'
-                      }`}
-                    >
-                      {t}s
-                    </button>
-                  ))}
+              {/* Row 2: Defensa & Adivinar Autor */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                {/* Tiempo de Defensa */}
+                <div className="bg-[#111] p-3.5 border-2 border-[#333]">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-[11px] font-black uppercase tracking-wider text-slate-300">
+                      Defensa
+                    </label>
+                    <span className="text-[#FFE600] font-mono font-black text-xs">{defenseTime}s</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1">
+                    {[10, 15, 20, 30].map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => onUpdateSettings({ defenseTimeSec: t })}
+                        className={`py-1.5 text-xs font-black border-2 transition ${
+                          defenseTime === t
+                            ? 'bg-[#FFE600] text-black border-black shadow-[1px_1px_0px_0px_#000]'
+                            : 'bg-[#1A1A1A] text-slate-400 border-[#333] hover:text-white'
+                        }`}
+                      >
+                        {t}s
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tiempo para Adivinar Autor */}
+                <div className="bg-[#111] p-3.5 border-2 border-[#333]">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-[11px] font-black uppercase tracking-wider text-slate-300">
+                      Adivinar Autor
+                    </label>
+                    <span className="text-[#00F0FF] font-mono font-black text-xs">{guessTime}s</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1">
+                    {[10, 15, 20, 30].map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => onUpdateSettings({ guessTimeSec: t })}
+                        className={`py-1.5 text-xs font-black border-2 transition ${
+                          guessTime === t
+                            ? 'bg-[#00F0FF] text-black border-black shadow-[1px_1px_0px_0px_#000]'
+                            : 'bg-[#1A1A1A] text-slate-400 border-[#333] hover:text-white'
+                        }`}
+                      >
+                        {t}s
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tiempo de Resultados / Pantalla */}
+                <div className="bg-[#111] p-3.5 border-2 border-[#333]">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-[11px] font-black uppercase tracking-wider text-slate-300">
+                      Resultados
+                    </label>
+                    <span className="text-[#FF10F0] font-mono font-black text-xs">{resultTime}s</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1">
+                    {[5, 8, 10, 15].map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => onUpdateSettings({ resultTimeSec: t })}
+                        className={`py-1.5 text-xs font-black border-2 transition ${
+                          resultTime === t
+                            ? 'bg-[#FF10F0] text-black border-black shadow-[1px_1px_0px_0px_#000]'
+                            : 'bg-[#1A1A1A] text-slate-400 border-[#333] hover:text-white'
+                        }`}
+                      >
+                        {t}s
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -285,13 +402,23 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
           </button>
         </div>
       ) : (
-        <div className="bg-black border-2 border-[#333] p-6 text-center text-slate-400 shadow-lg flex items-center justify-center gap-3">
-          <div className="w-2.5 h-2.5 bg-[#39FF14] animate-ping" />
-          <span className="font-mono text-xs font-bold uppercase tracking-widest text-[#39FF14]">
-            Esperando a que el anfitrión inicie la partida...
-          </span>
+        <div className="bg-black border-2 border-[#333] p-5 text-center text-slate-400 shadow-lg flex flex-col items-center justify-center gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 bg-[#39FF14] animate-ping" />
+            <span className="font-mono text-xs font-bold uppercase tracking-widest text-[#39FF14]">
+              Esperando a que el anfitrión inicie la partida...
+            </span>
+          </div>
+          <div className="flex items-center gap-3 text-[11px] font-mono text-slate-500 uppercase">
+            <span>⏱️ Votación: {votingTime}s</span>
+            <span>•</span>
+            <span>Defensa: {defenseTime}s</span>
+            <span>•</span>
+            <span>{totalRounds} Rondas</span>
+          </div>
         </div>
       )}
     </div>
   );
 };
+

@@ -41,8 +41,9 @@ export class GameRoom {
   public settings: RoomSettings = {
     totalRounds: 5,
     defenseTimeSec: 15,
-    votingTimeSec: 10,
-    guessTimeSec: 10
+    votingTimeSec: 20,
+    guessTimeSec: 15,
+    resultTimeSec: 8
   };
 
   public currentRound: number = 0;
@@ -686,42 +687,42 @@ export class GameRoom {
         break;
 
       case 'VOTE_RESULT':
-        this.timer = 5;
+        this.timer = Math.max(4, Math.min(this.settings.resultTimeSec || 7, 15));
         this.startCountdownTimer(() => {
           this.transitionToPhase('DEFENSE');
         });
         break;
 
       case 'DEFENSE':
-        this.timer = this.settings.defenseTimeSec; // 15 seconds
+        this.timer = this.settings.defenseTimeSec || 15;
         this.startCountdownTimer(() => {
           this.transitionToPhase('AUTHOR_GUESS');
         });
         break;
 
       case 'AUTHOR_GUESS':
-        this.timer = this.settings.guessTimeSec; // 10 seconds
+        this.timer = this.settings.guessTimeSec || 15;
         this.startCountdownTimer(() => {
           this.processAuthorGuessesAndAdvance();
         });
         break;
 
       case 'SUSPICION_REVEAL':
-        this.timer = 5;
+        this.timer = Math.max(4, Math.min(this.settings.resultTimeSec || 7, 15));
         this.startCountdownTimer(() => {
           this.revealAuthorAndScore();
         });
         break;
 
       case 'AUTHOR_REVEAL':
-        this.timer = 7;
+        this.timer = Math.max(5, Math.min((this.settings.resultTimeSec || 7) + 2, 20));
         this.startCountdownTimer(() => {
           this.transitionToPhase('ROUND_RESULT');
         });
         break;
 
       case 'ROUND_RESULT':
-        this.timer = 7;
+        this.timer = Math.max(5, Math.min((this.settings.resultTimeSec || 7) + 2, 20));
         this.startCountdownTimer(() => {
           if (this.currentRound >= this.totalRounds) {
             this.finishGame();

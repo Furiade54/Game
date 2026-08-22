@@ -30,6 +30,7 @@ export interface RoomSettings {
   defenseTimeSec: number;
   votingTimeSec: number;
   guessTimeSec: number;
+  resultTimeSec?: number;
 }
 
 export interface ClientQuestion {

@@ -1,0 +1,30 @@
+# Render Blueprint specification for automatic zero-config deployment
+# Docs: https://render.com/docs/blueprint-spec
+version: "1"
+
+services:
+  - type: web
+    name: quien-de-aqui-game
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MSSQL_SERVER
+        sync: false
+      - key: MSSQL_PORT
+        value: "1433"
+      - key: MSSQL_DATABASE
+        sync: false
+      - key: MSSQL_USER
+        sync: false
+      - key: MSSQL_PASSWORD
+        sync: false
+      - key: MSSQL_ENCRYPT
+        value: "true"
+      - key: MSSQL_TRUST_SERVER_CERTIFICATE
+        value: "true"

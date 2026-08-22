@@ -1,0 +1,6 @@
+{
+  "name": "¿Quién de aquí…?",
+  "description": "Party game social web para 4 a 12 jugadores con preguntas anónimas, votación secreta, defensa de 15s y deducción de autores.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
